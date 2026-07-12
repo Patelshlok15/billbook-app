@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BillBook</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f8fa;--card:#fff;--border:#e2e4e9;--border2:#cdd0d8;
+  --text:#1a1d23;--muted:#6b7280;--accent:#2563eb;--accent-light:#eff4ff;
+  --green:#0f6e56;--green-bg:#e8f7f2;--red:#b91c1c;--red-bg:#fef2f2;
+  --radius:10px;--radius-sm:6px;--shadow:0 1px 3px rgba(0,0,0,0.08);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+/* LOGIN */
+#login-screen{display:none;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+#login-screen.show{display:flex}
+.login-card{background:var(--card);border-radius:16px;border:1px solid var(--border);padding:32px 28px;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,.08)}
+.login-logo{text-align:center;margin-bottom:24px}
+.login-logo .ico{font-size:40px;display:block;margin-bottom:6px}
+.login-logo h1{font-size:22px;font-weight:700}
+.login-logo p{font-size:13px;color:var(--muted);margin-top:4px}
+.login-tabs{display:flex;background:var(--bg);border-radius:var(--radius-sm);padding:3px;margin-bottom:20px}
+.ltab{flex:1;padding:7px;text-align:center;font-size:13px;font-weight:500;cursor:pointer;border-radius:5px;color:var(--muted);transition:.15s}
+.ltab.active{background:#fff;color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.login-field{margin-bottom:14px}
+.login-field label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin-bottom:4px}
+.login-field input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;outline:none;transition:.15s}
+.login-field input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,.12)}
+.login-btn{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
+.login-btn:hover{background:#1d4ed8}
+.login-err{color:var(--red);font-size:12px;margin-top:8px;text-align:center;min-height:18px}
+.login-hint{margin-top:16px;padding:12px;background:var(--bg);border-radius:var(--radius-sm);font-size:12px;color:var(--muted)}
+.login-hint b{color:var(--text)}
+/* APP */
+#app-screen{display:none;flex-direction:column;height:100vh;overflow:hidden}
+#app-screen.show{display:flex}
+/* TOPBAR */
+.topbar{padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-shrink:0}
+.topbar-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.menu-btn{border:none;background:none;cursor:pointer;color:var(--text);font-size:20px;padding:2px;flex-shrink:0;display:none}
+.topbar h2{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.user-badge{display:flex;align-items:center;gap:6px;padding:5px 10px;background:var(--accent-light);border-radius:20px;font-size:12px;font-weight:500;color:var(--accent)}
+.user-badge .avatar{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;margin-right:2px}
+.sync-dot.syncing{background:#f59e0b;animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 12px;border-radius:var(--radius-sm);font-size:12px;font-weight:500;cursor:pointer;transition:.15s;border:1px solid var(--border);white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:#1d4ed8}
+.btn-outline{background:#fff;color:var(--text)}
+.btn-outline:hover{background:var(--bg)}
+/* LAYOUT */
+.app-body{display:flex;flex:1;overflow:hidden}
+.sidebar{width:220px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:.25s}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+/* SIDEBAR */
+.sidebar-header{padding:12px 14px;border-bottom:1px solid var(--border)}
+.sidebar-header p{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.cat-list{flex:1;overflow-y:auto;padding:6px}
+.cat-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:.15s;margin-bottom:2px;position:relative}
+.cat-item:hover{background:var(--bg)}
+.cat-item.active{background:var(--accent-light)}
+.cat-icon{width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.cat-name{flex:1;font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text)}
+.cat-item.active .cat-name{color:var(--accent)}
+.cat-count{font-size:10px;color:var(--muted);background:var(--bg);padding:1px 6px;border-radius:8px}
+.cat-item.active .cat-count{background:#dbeafe;color:var(--accent)}
+.cat-del{opacity:0;border:none;background:none;cursor:pointer;color:var(--muted);padding:2px 3px;border-radius:3px;font-size:12px}
+.cat-item:hover .cat-del{opacity:1}
+.cat-del:hover{color:var(--red)}
+.sidebar-footer{padding:8px 6px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px}
+.add-cat-btn{width:100%;display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px dashed var(--border2);border-radius:var(--radius-sm);background:none;cursor:pointer;color:var(--muted);font-size:12px;transition:.15s}
+.add-cat-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-light)}
+/* ONLINE */
+.online-panel{padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg)}
+.online-panel .title{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.online-users{display:flex;flex-wrap:wrap;gap:4px}
+.ou{display:flex;align-items:center;gap:4px;font-size:11px;padding:3px 7px;border-radius:10px;background:#fff;border:1px solid var(--border)}
+.ou .dot{width:6px;height:6px;border-radius:50%;background:#22c55e;flex-shrink:0}
+.ou.me{background:var(--accent-light);border-color:#bfdbfe;color:var(--accent)}
+/* SUMMARY */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0}
+.sum-card{background:var(--bg);border-radius:var(--radius-sm);padding:9px 11px}
+.sum-card label{font-size:10px;color:var(--muted);display:block;margin-bottom:2px;text-transform:uppercase;letter-spacing:.03em}
+.sum-card .val{font-size:16px;font-weight:700}
+.sum-green .val{color:var(--green)}
+.sum-red .val{color:var(--red)}
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:14px 16px}
+.cat-section{margin-bottom:20px}
+.cat-section-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--border)}
+.cat-tag{display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700}
+.cat-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.count-badge{font-size:10px;color:var(--muted);background:var(--border);padding:1px 7px;border-radius:8px}
+.cat-total{margin-left:auto;font-size:11px;color:var(--muted)}
+.cat-total strong{font-weight:600}
+/* TABLE */
+.tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:920px}
+thead th{background:var(--bg);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+th.r,td.r{text-align:right}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#fafbfc}
+tbody td{padding:8px 10px;font-size:12px;vertical-align:middle}
+.sno{color:var(--muted);font-size:11px}
+.photo-thumb{width:34px;height:34px;border-radius:5px;border:1px solid var(--border);object-fit:cover;display:block;cursor:pointer}
+.photo-ph{width:34px;height:34px;border-radius:5px;border:1.5px dashed var(--border2);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;cursor:pointer;background:var(--bg)}
+.photo-ph:hover{border-color:var(--accent);color:var(--accent)}
+.pname{font-weight:600;font-size:12px}
+.profit{color:var(--green);font-weight:700}
+.loss{color:var(--red);font-weight:700}
+.row-acts{display:flex;gap:3px;justify-content:flex-end}
+.ia{width:24px;height:24px;border:1px solid var(--border);border-radius:3px;background:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px;transition:.15s;flex-shrink:0}
+.ia:hover{background:var(--bg);color:var(--text)}
+.ia.dup:hover{background:#eff4ff;color:var(--accent);border-color:#bfdbfe}
+.ia.del:hover{background:var(--red-bg);color:var(--red);border-color:#fca5a5}
+.added-by{font-size:10px;color:var(--muted)}
+.totals-row td{font-weight:700;font-size:11px;color:var(--muted);background:#f9fafb;border-top:2px solid var(--border)!important}
+.status-badge{display:inline-block;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap}
+.st-pending{background:#fef3c7;color:#92400e}
+.st-progress{background:#dbeafe;color:#1e40af}
+.st-done{background:var(--green-bg);color:var(--green)}
+.st-unpaid{background:var(--red-bg);color:var(--red)}
+.st-partial{background:#fef3c7;color:#92400e}
+.st-paid{background:var(--green-bg);color:var(--green)}
+/* EMPTY */
+.empty{text-align:center;padding:40px 16px;color:var(--muted)}
+.empty .ico{font-size:36px;margin-bottom:8px}
+/* ACTIVITY */
+.activity-bar{padding:6px 16px;background:#fefce8;border-bottom:1px solid #fde68a;font-size:11px;color:#92400e;display:none;align-items:center;gap:6px;flex-shrink:0}
+.activity-bar.show{display:flex}
+/* MODALS */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center;padding:14px}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius);width:100%;max-width:460px;max-height:93vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.18)}
+.modal-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:14px;font-weight:700}
+.modal-close{border:none;background:none;cursor:pointer;color:var(--muted);font-size:20px;line-height:1;padding:0 2px}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:16px}
+.modal-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-row.three{grid-template-columns:1fr 1fr 1fr}
+.field{margin-bottom:10px}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.03em}
+.field input,.field select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:#fff;color:var(--text);outline:none;transition:.15s}
+.field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(37,99,235,.1)}
+.photo-area{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:12px}
+.photo-preview{width:72px;height:72px;border-radius:8px;border:2px dashed var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;background:var(--bg)}
+.photo-preview:hover{border-color:var(--accent)}
+.ph-ico{font-size:20px;color:var(--muted)}
+.ph-txt{font-size:10px;color:var(--muted);margin-top:2px}
+.profit-prev{border-radius:var(--radius-sm);padding:7px 10px;font-size:12px;font-weight:600;margin-top:2px;text-align:center}
+.pp-g{background:var(--green-bg);color:var(--green)}
+.pp-r{background:var(--red-bg);color:var(--red)}
+.color-picks{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.cp{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:.15s}
+.cp.sel{border-color:#1a1d23;transform:scale(1.2)}
+.emoji-picks{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.ep{width:30px;height:30px;border:1px solid var(--border);border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:.15s}
+.ep:hover,.ep.sel{background:var(--accent-light);border-color:var(--accent)}
+/* MOBILE */
+.overlay-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:90}
+@media(max-width:680px){
+  .sidebar{position:fixed;top:0;left:-220px;height:100%;z-index:100;box-shadow:4px 0 12px rgba(0,0,0,.12)}
+  .sidebar.open{left:0}
+  .overlay-bg.open{display:block}
+  .menu-btn{display:block}
+  .summary{grid-template-columns:1fr 1fr}
+  .content{padding:10px}
+  .topbar{padding:10px 12px}
+  .uname{display:none}
+  .form-row.three{grid-template-columns:1fr 1fr}
+}
+@media(max-width:400px){.form-row,.form-row.three{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="show">
+  <div class="login-card">
+    <div class="login-logo">
+      <span class="ico">🧾</span>
+      <h1>BillBook</h1>
+      <p>Shared product billing for your team</p>
+    </div>
+    <div class="login-tabs">
+      <div class="ltab active" id="tab-login" onclick="switchTab('login')">Login</div>
+      <div class="ltab" id="tab-reg" onclick="switchTab('reg')">Register</div>
+    </div>
+    <div id="login-form">
+      <div class="login-field"><label>Email</label><input type="email" id="l-user" placeholder="you@example.com" autocomplete="username"></div>
+      <div class="login-field"><label>Password</label><input type="password" id="l-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="login-btn" onclick="doLogin()">Login →</button>
+    </div>
+    <div id="reg-form" style="display:none">
+      <div class="login-field"><label>Full name</label><input type="text" id="r-name" placeholder="Your name"></div>
+      <div class="login-field"><label>Email</label><input type="email" id="r-user" placeholder="you@example.com"></div>
+      <div class="login-field"><label>Password</label><input type="password" id="r-pass" placeholder="Choose a password (6+ chars)" onkeydown="if(event.key==='Enter')doRegister()"></div>
+      <button class="login-btn" onclick="doRegister()">Create Account →</button>
+    </div>
+    <div class="login-err" id="login-err"></div>
+    <div class="login-hint" id="login-hint"><b>Same login, any device.</b> Log in with the same email on your laptop and phone to see the same live data.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <h2 id="page-title">All Products</h2>
+    </div>
+    <div class="topbar-right">
+      <span class="sync-dot" id="sync-dot"></span>
+      <div class="user-badge">
+        <div class="avatar" id="user-avatar">?</div>
+        <span class="uname" id="user-label">User</span>
+      </div>
+      <button class="btn btn-outline" onclick="editBankBalance()">🏦 Bank</button>
+      <button class="btn btn-outline" onclick="exportCSV()">⬇ CSV</button>
+      <button class="btn btn-primary" onclick="openProdModal(null)">＋ Add</button>
+      <button class="btn btn-outline" onclick="doLogout()" title="Logout">⎋</button>
+    </div>
+  </div>
+  <div class="activity-bar" id="activity-bar">📢 <span id="activity-msg"></span></div>
+  <div class="app-body">
+    <aside class="sidebar" id="sidebar">
+      <div class="online-panel">
+        <div class="title">🟢 Online now</div>
+        <div class="online-users" id="online-users"></div>
+      </div>
+      <div class="sidebar-header"><p>Categories</p></div>
+      <div class="cat-list" id="cat-list"></div>
+      <div class="sidebar-footer">
+        <button class="add-cat-btn" id="monthly-nav-btn" onclick="openMonthly()" style="border-color:#bae6fd;color:#0369a1">📅 Monthly Reports</button>
+        <button class="add-cat-btn" onclick="openCatModal(null)">＋ Add category</button>
+        <button class="add-cat-btn" onclick="openUsersPanel()" style="border-color:#e9d5ff;color:#7c3aed">👥 Manage users</button>
+      </div>
+    </aside>
+    <div class="overlay-bg" id="overlay-bg" onclick="closeSidebar()"></div>
+    <div class="main">
+      <div class="summary" id="summary"></div>
+      <div class="content" id="content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- PRODUCT MODAL -->
+<div class="overlay" id="prod-overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="prod-modal-title">Add Product</h3>
+      <button class="modal-close" onclick="closeProdModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="photo-area">
+        <div class="photo-preview" id="photo-preview" onclick="document.getElementById('photo-file').click()">
+          <div class="ph-ico">📷</div><div class="ph-txt">Add photo</div>
+        </div>
+        <input type="file" id="photo-file" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)">
+      </div>
+      <div class="field"><label>Product name *</label><input type="text" id="f-name" placeholder="e.g. Basmati Rice 5kg"></div>
+      <div class="form-row">
+        <div class="field"><label>Category</label><select id="f-cat"></select></div>
+        <div class="field"><label>Order month</label><input type="month" id="f-month"></div>
+      </div>
+      <div class="form-row three">
+        <div class="field"><label>Purchase ₹</label><input type="number" id="f-purchase" placeholder="0" min="0" step="0.01" oninput="updateProfitPreview()"></div>
+        <div class="field"><label>MRP ₹</label><input type="number" id="f-mrp" placeholder="0" min="0" step="0.01"></div>
+        <div class="field"><label>Selling ₹</label><input type="number" id="f-sell" placeholder="0" min="0" step="0.01" oninput="updateProfitPreview()"></div>
+      </div>
+      <div class="form-row three">
+        <div class="field"><label>Petrol ₹</label><input type="number" id="f-petrol" placeholder="0" min="0" step="0.01" oninput="updateProfitPreview()"></div>
+      </div>
+      <div id="profit-preview-box"></div>
+      <div class="form-row three">
+        <div class="field"><label>Purchase status</label>
+          <select id="f-pstatus">
+            <option value="pending">Pending</option>
+            <option value="ordered">Ordered</option>
+            <option value="received">Received</option>
+          </select>
+        </div>
+        <div class="field"><label>Delivery status</label>
+          <select id="f-dstatus">
+            <option value="pending">Pending</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+          </select>
+        </div>
+        <div class="field"><label>Payment status</label>
+          <select id="f-paystatus">
+            <option value="unpaid">Unpaid</option>
+            <option value="partial">Partial</option>
+            <option value="paid">Paid</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeProdModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProduct()">Save product</button>
+    </div>
+  </div>
+</div>
+
+<!-- CATEGORY MODAL -->
+<div class="overlay" id="cat-overlay">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-head">
+      <h3 id="cat-modal-title">Add Category</h3>
+      <button class="modal-close" onclick="closeCatModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>Category name *</label><input type="text" id="c-name" placeholder="e.g. Groceries"></div>
+      <div class="field"><label>Icon</label><div class="emoji-picks" id="emoji-picks"></div></div>
+      <div class="field"><label>Color</label><div class="color-picks" id="color-picks"></div></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeCatModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCategory()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- USERS MODAL -->
+<div class="overlay" id="users-overlay">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head"><h3>👥 All Users</h3><button class="modal-close" onclick="closeUsersPanel()">×</button></div>
+    <div class="modal-body" id="users-list"></div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeUsersPanel()">Close</button></div>
+  </div>
+</div>
+
+<!-- Firebase (free backend) — enables real-time sync between laptop & mobile -->
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  PASTE YOUR FIREBASE CONFIG HERE (see setup instructions)
+//  console.firebase.google.com → Project settings → Your apps
+// ══════════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyBcj6lBQqVBkzSaBklCXjOufblsD7v5dw0",
+  authDomain:        "bill-book-cd650.firebaseapp.com",
+  projectId:         "bill-book-cd650",
+  storageBucket:      "bill-book-cd650.firebasestorage.app",
+  messagingSenderId: "1010902872279",
+  appId:             "1:1010902872279:web:39b08d84999919e7714092",
+};
+// One shared document holds all of Kavya Traders' data.
+// Change this only if you want a second, separate, independent shop.
+const SHOP_ID = "kavya-traders-main";
+
+let cloudReady = false;
+let fireApp, fireAuth, fireDB, unsubSnapshot = null;
+try {
+  if (FIREBASE_CONFIG.apiKey && !FIREBASE_CONFIG.apiKey.startsWith('PASTE_')) {
+    fireApp  = firebase.initializeApp(FIREBASE_CONFIG);
+    fireAuth = firebase.auth();
+    fireDB   = firebase.firestore();
+    cloudReady = true;
+  }
+} catch(e) { console.error('Firebase init failed:', e); }
+</script>
+
+<script>
+// ══════════════════════════════════════════
+//  BILLBOOK — fully working version
+//  Data stored in localStorage, persists
+//  across page reloads and tab closes.
+// ══════════════════════════════════════════
+
+const DB_KEY      = 'billbook_v2_db';
+const SESSION_KEY = 'billbook_v2_session';
+
+// ── Default data ──────────────────────────
+const DEFAULT_DB = {
+  users: [],   // populated automatically as people log in / register via Firebase
+  categories: [
+    {id:1, name:'Groceries',   icon:'🛒', color:'#2563eb', createdBy:1},
+    {id:2, name:'Electronics', icon:'📱', color:'#7c3aed', createdBy:1},
+    {id:3, name:'Clothing',    icon:'👕', color:'#0f766e', createdBy:1},
+  ],
+  products:    [],
+  activity:    [],
+  onlineUsers: {},
+  nextProdId:  1,
+  nextCatId:   4,
+  nextUserId:  4,
+  bankBalance: 0,
+  customMonths: [],  // 'YYYY-MM' months manually added even before any product exists
+};
+
+// ── DB helpers ────────────────────────────
+function ensureDBShape(d) {
+  d.users       = d.users       || [];
+  d.categories  = d.categories  || JSON.parse(JSON.stringify(DEFAULT_DB.categories));
+  d.products    = d.products    || [];
+  d.activity    = d.activity    || [];
+  d.onlineUsers = d.onlineUsers || {};
+  d.nextProdId  = d.nextProdId  || 1;
+  d.nextCatId   = d.nextCatId   || 4;
+  d.nextUserId  = d.nextUserId  || 4;
+  d.bankBalance = d.bankBalance || 0;
+  d.customMonths = d.customMonths || [];
+  return d;
+}
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if (!raw) return saveLocalOnly(JSON.parse(JSON.stringify(DEFAULT_DB))), loadDB();
+    return ensureDBShape(JSON.parse(raw));
+  } catch(e) {
+    const fresh = JSON.parse(JSON.stringify(DEFAULT_DB));
+    saveLocalOnly(fresh);
+    return fresh;
+  }
+}
+
+// Cache-only write (used before cloud is connected, e.g. on the login screen)
+function saveLocalOnly(d) {
+  try { localStorage.setItem(DB_KEY, JSON.stringify(d)); }
+  catch(e) { /* ignore quota errors on cache */ }
+}
+
+// Main save: writes to the local cache immediately (instant UI),
+// then pushes to Firestore so every other logged-in device gets it too.
+function saveDB(d) {
+  saveLocalOnly(d);
+  if (cloudReady && fireAuth.currentUser) {
+    setSyncDot('syncing');
+    fireDB.collection('shops').doc(SHOP_ID).set(d)
+      .then(() => setSyncDot('online'))
+      .catch(err => { console.error('Cloud save failed:', err); setSyncDot('offline'); });
+  }
+}
+
+function setSyncDot(state) {
+  const d = document.getElementById('sync-dot');
+  if (!d) return;
+  d.classList.remove('syncing');
+  d.style.background = state === 'offline' ? '#ef4444' : state === 'syncing' ? '#f59e0b' : '#22c55e';
+  if (state === 'syncing') d.classList.add('syncing');
+}
+
+// Attach the real-time cloud listener — fires instantly whenever ANY
+// device (laptop or mobile) signed in to the same account changes data.
+function attachCloudSync() {
+  if (!cloudReady) return;
+  if (unsubSnapshot) unsubSnapshot();
+  const ref = fireDB.collection('shops').doc(SHOP_ID);
+  unsubSnapshot = ref.onSnapshot(snap => {
+    if (!snap.exists) {
+      // First time ever — seed the shared cloud document
+      ref.set(DB);
+      return;
+    }
+    const incoming = ensureDBShape(snap.data());
+    const isFirstLoad = !DB.__synced;
+    DB = incoming;
+    DB.__synced = true;
+    saveLocalOnly(DB);
+    setSyncDot('online');
+    if (currentUser) {
+      renderAll();
+      if (!isFirstLoad) showLatestActivity();
+    }
+  }, err => { console.error('Cloud sync error:', err); setSyncDot('offline'); });
+}
+
+// ── State ─────────────────────────────────
+let DB          = loadDB();     // always in sync with localStorage
+let currentUser = null;
+let activeCat   = 'all';        // 'all' OR integer OR 'monthly'
+let activeMonth = null;         // 'YYYY-MM' when drilled into a month, else null
+let editProdId  = null;         // integer or null
+let editCatId   = null;
+let currentPhoto = null;
+let selColor    = '#2563eb';
+let selEmoji    = '📦';
+let syncTimer   = null;
+let actTimer    = null;
+
+const EMOJIS = ['📦','🛒','📱','👕','🍎','🥤','💊','📚','🔧','🏠','🚗','💄','🎮','🌿','🧴','👟','🔑','🍕','☕','🎁'];
+const COLORS  = ['#2563eb','#7c3aed','#0f766e','#b91c1c','#d97706','#059669','#db2777','#0891b2','#65a30d','#6366f1','#92400e','#1d4ed8'];
+
+// ── Helpers ───────────────────────────────
+const fmt = n => '₹' + Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num = v => parseFloat(v) || 0;
+
+function statusBadge(type, value) {
+  const maps = {
+    purchase: {pending:['Pending','st-pending'], ordered:['Ordered','st-progress'], received:['Received','st-done']},
+    delivery: {pending:['Pending','st-pending'], shipped:['Shipped','st-progress'], delivered:['Delivered','st-done']},
+    payment:  {unpaid:['Unpaid','st-unpaid'],   partial:['Partial','st-partial'],  paid:['Paid','st-paid']},
+  };
+  const m = maps[type][value] || maps[type][Object.keys(maps[type])[0]];
+  return `<span class="status-badge ${m[1]}">${m[0]}</span>`;
+}
+
+// CRITICAL: always compare category IDs as integers
+function catMatch(prodCatId, cmpId) {
+  if (prodCatId === null || prodCatId === undefined || prodCatId === '') return false;
+  return parseInt(prodCatId) === parseInt(cmpId);
+}
+function prodsInCat(products, catId) {
+  return products.filter(p => catMatch(p.catId, catId));
+}
+
+// ── Month helpers ─────────────────────────
+function monthKey(ts) {
+  const d = new Date(ts || Date.now());
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+function monthLabel(key) {
+  const [y, m] = key.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+}
+function monthTotals(prods) {
+  const tP  = prods.reduce((a, p) => a + num(p.purchase), 0);
+  const tS  = prods.reduce((a, p) => a + num(p.sell),     0);
+  const tM  = prods.reduce((a, p) => a + num(p.mrp),      0);
+  const tPt = prods.reduce((a, p) => a + num(p.petrol),   0);
+  return { tP, tS, tM, tPt, tPr: tS - tP - tPt };
+}
+// A product's month is whatever was chosen in the "Order month" field;
+// falls back to its created date for older products that don't have one.
+function prodMonthKey(p) {
+  return p.month || monthKey(p.createdAt);
+}
+
+// ══ AUTH ══════════════════════════════════
+function switchTab(t) {
+  document.getElementById('tab-login').classList.toggle('active', t === 'login');
+  document.getElementById('tab-reg').classList.toggle('active', t === 'reg');
+  document.getElementById('login-form').style.display = t === 'login' ? '' : 'none';
+  document.getElementById('reg-form').style.display   = t === 'reg'   ? '' : 'none';
+  document.getElementById('login-err').textContent = '';
+}
+function setErr(msg) { document.getElementById('login-err').textContent = msg; }
+
+function friendlyAuthErr(code) {
+  const map = {
+    'auth/invalid-email':        'That email address looks invalid.',
+    'auth/user-not-found':       'No account with that email. Try Register instead.',
+    'auth/wrong-password':       'Wrong password.',
+    'auth/invalid-credential':   'Wrong email or password.',
+    'auth/email-already-in-use': 'That email is already registered — try Login instead.',
+    'auth/weak-password':       'Password must be at least 6 characters.',
+    'auth/network-request-failed': 'No internet connection.',
+  };
+  return map[code] || 'Something went wrong. Please try again.';
+}
+
+function doLogin() {
+  if (!cloudReady) { setErr('Backend not set up yet — see setup instructions.'); return; }
+  const email = document.getElementById('l-user').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  if (!email || !pass) { setErr('Enter email and password'); return; }
+  setErr('Logging in…');
+  fireAuth.signInWithEmailAndPassword(email, pass)
+    .catch(err => setErr(friendlyAuthErr(err.code)));
+}
+
+function doRegister() {
+  if (!cloudReady) { setErr('Backend not set up yet — see setup instructions.'); return; }
+  const name  = document.getElementById('r-name').value.trim();
+  const email = document.getElementById('r-user').value.trim();
+  const pass  = document.getElementById('r-pass').value;
+  if (!name || !email || !pass) { setErr('All fields required'); return; }
+  if (pass.length < 6) { setErr('Password must be ≥ 6 characters'); return; }
+  setErr('Creating account…');
+  fireAuth.createUserWithEmailAndPassword(email, pass)
+    .then(cred => cred.user.updateProfile({displayName: name}))
+    .catch(err => setErr(friendlyAuthErr(err.code)));
+}
+
+function doLogout() {
+  if (unsubSnapshot) { unsubSnapshot(); unsubSnapshot = null; }
+  if (cloudReady) fireAuth.signOut();
+  currentUser = null;
+  activeCat = 'all';
+  document.getElementById('app-screen').classList.remove('show');
+  document.getElementById('login-screen').classList.add('show');
+}
+
+function showApp() {
+  document.getElementById('login-screen').classList.remove('show');
+  document.getElementById('app-screen').classList.add('show');
+  document.getElementById('user-avatar').textContent = (currentUser.name || '?')[0].toUpperCase();
+  document.getElementById('user-label').textContent  = currentUser.name;
+  renderAll();
+}
+
+// Make sure this Firebase account has a matching profile in DB.users,
+// then log them in and start the real-time cloud listener.
+function onCloudUserReady(fbUser) {
+  DB.onlineUsers = DB.onlineUsers || {};
+  let profile = (DB.users || []).find(u => u.id === fbUser.uid);
+  if (!profile) {
+    profile = {
+      id: fbUser.uid,
+      username: fbUser.email,
+      name: fbUser.displayName || fbUser.email.split('@')[0],
+      role: (DB.users || []).length === 0 ? 'admin' : 'user', // first person to join becomes admin
+      createdAt: Date.now(),
+    };
+    DB.users.push(profile);
+  }
+  currentUser = profile;
+  DB.onlineUsers[currentUser.id] = {id: currentUser.id, name: currentUser.name, username: currentUser.username, ts: Date.now()};
+  saveDB(DB);
+  showApp();
+}
+
+if (cloudReady) {
+  fireAuth.onAuthStateChanged(fbUser => {
+    if (fbUser) {
+      attachCloudSync();
+      // Give the first snapshot a brief moment to arrive so we don't
+      // overwrite teammates' data with a stale local copy.
+      setTimeout(() => onCloudUserReady(fbUser), 400);
+    } else {
+      currentUser = null;
+      document.getElementById('app-screen').classList.remove('show');
+      document.getElementById('login-screen').classList.add('show');
+    }
+  });
+} else {
+  document.getElementById('login-hint').innerHTML =
+    '<b>⚠️ Backend not configured yet.</b><br>Open this file\'s code and paste your Firebase config near the top (see setup guide).';
+}
+
+function logActivity(msg) {
+  DB = loadDB();
+  DB.activity.push({msg, ts: Date.now(), userId: currentUser ? currentUser.id : 0});
+  if (DB.activity.length > 50) DB.activity = DB.activity.slice(-50);
+  saveDB(DB);
+}
+
+function showLatestActivity() {
+  const acts = DB.activity || [];
+  if (!acts.length) return;
+  const last = acts[acts.length - 1];
+  if (Date.now() - last.ts > 6000) return;
+  if (last.userId === (currentUser ? currentUser.id : -1)) return;
+  const bar = document.getElementById('activity-bar');
+  document.getElementById('activity-msg').textContent = last.msg;
+  bar.classList.add('show');
+  clearTimeout(actTimer);
+  actTimer = setTimeout(() => bar.classList.remove('show'), 4000);
+}
+
+// ══ RENDER ════════════════════════════════
+function renderAll() {
+  renderOnlineUsers();
+  renderSidebar();
+  renderSummary();
+  renderContent();
+  const title = activeCat === 'all'
+    ? 'All Products'
+    : activeCat === 'monthly'
+      ? (activeMonth ? '📅 ' + monthLabel(activeMonth) : '📅 Monthly Reports')
+      : ((DB.categories || []).find(c => parseInt(c.id) === activeCat) || {}).name || 'Products';
+  document.getElementById('page-title').textContent = title;
+}
+
+function renderOnlineUsers() {
+  const ou   = DB.onlineUsers || {};
+  const vals = Object.values(ou);
+  document.getElementById('online-users').innerHTML = vals.length
+    ? vals.map(u => `<div class="ou ${u.id === currentUser.id ? 'me' : ''}"><div class="dot"></div>${u.name}${u.id === currentUser.id ? ' (you)' : ''}</div>`).join('')
+    : '<span style="font-size:11px;color:var(--muted)">No one online</span>';
+}
+
+function renderSidebar() {
+  const prods = DB.products    || [];
+  const cats  = DB.categories  || [];
+  let html = `<div class="cat-item ${activeCat === 'all' ? 'active' : ''}" onclick="setActiveCat('all')">
+    <div class="cat-icon" style="background:#f1f5f9">📋</div>
+    <span class="cat-name">All products</span>
+    <span class="cat-count">${prods.length}</span>
+  </div>`;
+  cats.forEach(c => {
+    const cid = parseInt(c.id);
+    const cnt = prodsInCat(prods, cid).length;
+    html += `<div class="cat-item ${activeCat === cid ? 'active' : ''}" onclick="setActiveCat(${cid})">
+      <div class="cat-icon" style="background:${c.color}22">${c.icon}</div>
+      <span class="cat-name">${c.name}</span>
+      <span class="cat-count">${cnt}</span>
+      <button class="cat-del" onclick="event.stopPropagation();deleteCategory(${cid})" title="Delete">✕</button>
+    </div>`;
+  });
+  document.getElementById('cat-list').innerHTML = html;
+  const mBtn = document.getElementById('monthly-nav-btn');
+  if (mBtn) mBtn.style.background = activeCat === 'monthly' ? '#eff9ff' : '';
+}
+
+function renderSummary() {
+  const prods = activeCat === 'all'
+    ? (DB.products || [])
+    : prodsInCat(DB.products || [], activeCat);
+  const tP  = prods.reduce((a, p) => a + num(p.purchase), 0);
+  const tS  = prods.reduce((a, p) => a + num(p.sell),     0);
+  const tM  = prods.reduce((a, p) => a + num(p.mrp),      0);
+  const tPt = prods.reduce((a, p) => a + num(p.petrol),   0);
+  const tPr = tS - tP - tPt;
+  const pendingPurchase = prods.filter(p => (p.purchaseStatus || 'pending') !== 'received').length;
+  const pendingDelivery = prods.filter(p => (p.deliveryStatus || 'pending') !== 'delivered').length;
+  const pendingPayment  = prods.filter(p => (p.paymentStatus  || 'unpaid')  !== 'paid').length;
+  const collectedAmt = prods.filter(p => (p.paymentStatus || 'unpaid') === 'paid').reduce((a, p) => a + num(p.sell), 0);
+  const pendingAmt   = prods.filter(p => (p.paymentStatus || 'unpaid') !== 'paid').reduce((a, p) => a + num(p.sell), 0);
+  const bankBal = num(DB.bankBalance);
+  const curKey   = monthKey(Date.now());
+  const curLabel = monthLabel(curKey);
+  const curMonthProds = (DB.products || []).filter(p => prodMonthKey(p) === curKey);
+  const cm = monthTotals(curMonthProds);
+  document.getElementById('summary').innerHTML = `
+    <div class="sum-card" style="cursor:pointer;background:var(--accent-light);grid-column:span 2" onclick="openMonth('${curKey}')" title="View full month details">
+      <label>📅 ${curLabel} (this month)</label>
+      <div class="val" style="color:var(--accent)">${cm.tPr >= 0 ? '+' : ''}${fmt(cm.tPr)} <span style="font-size:11px;font-weight:500;color:var(--muted)">profit · ${curMonthProds.length} item${curMonthProds.length !== 1 ? 's' : ''} · tap for details</span></div>
+    </div>
+    <div class="sum-card"><label>Products</label><div class="val">${prods.length}</div></div>
+    <div class="sum-card"><label>Total Purchase</label><div class="val">${fmt(tP)}</div></div>
+    <div class="sum-card"><label>Total MRP</label><div class="val">${fmt(tM)}</div></div>
+    <div class="sum-card"><label>Total Selling</label><div class="val">${fmt(tS)}</div></div>
+    <div class="sum-card"><label>Total Petrol</label><div class="val">${fmt(tPt)}</div></div>
+    <div class="sum-card ${tPr >= 0 ? 'sum-green' : 'sum-red'}"><label>Profit / Loss</label><div class="val">${tPr >= 0 ? '+' : ''}${fmt(tPr)}</div></div>
+    <div class="sum-card ${pendingPurchase ? 'sum-red' : 'sum-green'}"><label>Purchase Pending</label><div class="val">${pendingPurchase}</div></div>
+    <div class="sum-card ${pendingDelivery ? 'sum-red' : 'sum-green'}"><label>Delivery Pending</label><div class="val">${pendingDelivery}</div></div>
+    <div class="sum-card ${pendingPayment ? 'sum-red' : 'sum-green'}"><label>Payment Pending</label><div class="val">${pendingPayment}</div></div>
+    <div class="sum-card sum-green"><label>Collected Amount</label><div class="val">${fmt(collectedAmt)}</div></div>
+    <div class="sum-card sum-red"><label>Pending Amount</label><div class="val">${fmt(pendingAmt)}</div></div>
+    <div class="sum-card" style="cursor:pointer" onclick="editBankBalance()" title="Click to edit"><label>Bank Balance</label><div class="val">${fmt(bankBal)}</div></div>`;
+}
+
+function editBankBalance() {
+  DB = loadDB();
+  const cur = num(DB.bankBalance);
+  const raw = prompt('Enter current bank balance (₹):', cur || '');
+  if (raw === null) return;
+  const val = num(raw);
+  DB.bankBalance = val;
+  saveDB(DB);
+  DB = loadDB();
+  logActivity('🏦 ' + currentUser.name + ' updated bank balance to ' + fmt(val));
+  renderAll();
+}
+
+function renderContent() {
+  const el    = document.getElementById('content');
+  const prods = DB.products   || [];
+  const cats  = DB.categories || [];
+
+  // ── Monthly reports view ──
+  if (activeCat === 'monthly') {
+    el.innerHTML = activeMonth ? buildMonthDetail(activeMonth) : buildMonthList();
+    return;
+  }
+
+  // ── Specific category view ──
+  if (activeCat !== 'all') {
+    const cat = cats.find(c => parseInt(c.id) === activeCat);
+    if (!cat) { el.innerHTML = '<div class="empty"><div class="ico">❓</div><p>Category not found</p></div>'; return; }
+    el.innerHTML = buildSection(cat, prodsInCat(prods, activeCat), false);
+    return;
+  }
+
+  // ── All products view ──
+  if (!prods.length) {
+    el.innerHTML = `<div class="empty"><div class="ico">📦</div><p>No products yet<br><small>Click <b>＋ Add</b> to add your first product</small></p></div>`;
+    return;
+  }
+
+  let html = buildHomeMonthlyPreview();
+
+  // Group products: key = 'c{id}' or 'none'
+  const groups = {};
+  prods.forEach(p => {
+    const k = (p.catId !== null && p.catId !== undefined && p.catId !== '') ? 'c' + parseInt(p.catId) : 'none';
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(p);
+  });
+
+  cats.forEach(c => {
+    const g = groups['c' + parseInt(c.id)] || [];
+    if (g.length) html += buildSection(c, g, true);
+  });
+  const uncats = groups['none'] || [];
+  if (uncats.length) html += buildSection({id:'none', name:'Uncategorized', icon:'📦', color:'#888'}, uncats, true);
+  el.innerHTML = html;
+}
+
+// ── Monthly report preview shown right on the home page ──
+function buildHomeMonthlyPreview() {
+  const prods = DB.products || [];
+  const groups = {};
+  prods.forEach(p => {
+    const k = prodMonthKey(p);
+    (groups[k] = groups[k] || []).push(p);
+  });
+  (DB.customMonths || []).forEach(k => { if (!groups[k]) groups[k] = []; });
+
+  const keys      = Object.keys(groups).sort().reverse(); // newest first
+  const curKey    = monthKey(Date.now());
+  const allTotals = monthTotals(prods);
+  const shown     = keys.slice(0, 6); // preview only the most recent months here
+  const more      = keys.length - shown.length;
+
+  let html = `<div class="cat-section">
+    <div class="cat-section-header">
+      <div class="cat-tag">📅 Monthly Report</div>
+      <span class="count-badge">${keys.length} month${keys.length !== 1 ? 's' : ''}</span>
+      <button class="btn btn-outline" style="margin-left:auto" onclick="openMonthly()">View all months →</button>
+    </div>
+    <div class="summary" style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px">
+      <div class="sum-card"><label>Total Purchase (all months)</label><div class="val">${fmt(allTotals.tP)}</div></div>
+      <div class="sum-card"><label>Total Selling (all months)</label><div class="val">${fmt(allTotals.tS)}</div></div>
+      <div class="sum-card ${allTotals.tPr >= 0 ? 'sum-green' : 'sum-red'}"><label>Total Profit (all months)</label><div class="val">${allTotals.tPr >= 0 ? '+' : ''}${fmt(allTotals.tPr)}</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px">`;
+
+  shown.forEach(k => {
+    const g = groups[k];
+    const t = monthTotals(g);
+    const isCur = k === curKey;
+    html += `<div class="tbl-wrap" style="padding:12px;cursor:pointer;${isCur ? 'border-color:var(--accent)' : ''}" onclick="openMonth('${k}')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-weight:700;font-size:12px">${monthLabel(k)}${isCur ? ' <span style="font-size:10px;color:var(--accent)">(this month)</span>' : ''}</div>
+        <span class="count-badge">${g.length}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);display:flex;justify-content:space-between"><span>Sell</span><strong style="color:var(--text)">${fmt(t.tS)}</strong></div>
+      <div style="font-size:11px;color:var(--muted);display:flex;justify-content:space-between"><span>Purchase</span><strong style="color:var(--text)">${fmt(t.tP)}</strong></div>
+      <div style="font-size:11px;color:var(--muted);display:flex;justify-content:space-between;padding-top:3px;border-top:1px solid var(--border);margin-top:3px">
+        <span>Profit</span><strong class="${t.tPr >= 0 ? 'profit' : 'loss'}">${t.tPr >= 0 ? '+' : ''}${fmt(t.tPr)}</strong>
+      </div>
+    </div>`;
+  });
+
+  if (more > 0) {
+    html += `<div class="tbl-wrap" style="padding:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--accent);font-size:12px;font-weight:600" onclick="openMonthly()">+${more} more month${more !== 1 ? 's' : ''} →</div>`;
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+function buildSection(cat, prods, showHeader) {
+  const tP  = prods.reduce((a, p) => a + num(p.purchase), 0);
+  const tS  = prods.reduce((a, p) => a + num(p.sell),     0);
+  const tM  = prods.reduce((a, p) => a + num(p.mrp),      0);
+  const tPt = prods.reduce((a, p) => a + num(p.petrol),   0);
+  const tPr = tS - tP - tPt;
+
+  let html = '<div class="cat-section">';
+
+  if (showHeader) {
+    html += `<div class="cat-section-header">
+      <div class="cat-tag"><div class="cat-dot" style="background:${cat.color}"></div>${cat.icon} ${cat.name}</div>
+      <span class="count-badge">${prods.length} item${prods.length !== 1 ? 's' : ''}</span>
+      <span class="cat-total">Profit: <strong style="color:${tPr >= 0 ? 'var(--green)' : 'var(--red)'}">${tPr >= 0 ? '+' : ''}${fmt(tPr)}</strong></span>
+    </div>`;
+  }
+
+  if (!prods.length) {
+    html += `<div class="tbl-wrap"><div class="empty" style="padding:24px"><div class="ico" style="font-size:24px">📦</div><p>No products in this category</p></div></div>`;
+    html += '</div>';
+    return html;
+  }
+
+  html += `<div class="tbl-wrap"><table>
+    <thead><tr>
+      <th style="width:28px">#</th>
+      <th style="width:44px">Photo</th>
+      <th>Name</th>
+      <th style="width:100px" class="r">Purchase</th>
+      <th style="width:90px"  class="r">MRP</th>
+      <th style="width:100px" class="r">Selling</th>
+      <th style="width:85px"  class="r">Petrol</th>
+      <th style="width:100px" class="r">Profit/Loss</th>
+      <th style="width:85px">Purchase St.</th>
+      <th style="width:85px">Delivery St.</th>
+      <th style="width:85px">Payment St.</th>
+      <th style="width:85px">Added by</th>
+      <th style="width:72px"></th>
+    </tr></thead><tbody>`;
+
+  prods.forEach((p, i) => {
+    const pr  = num(p.sell) - num(p.purchase) - num(p.petrol);
+    const cls = pr >= 0 ? 'profit' : 'loss';
+    const by  = (DB.users || []).find(u => u.id === p.createdBy);
+    html += `<tr>
+      <td class="sno">${i+1}</td>
+      <td>${p.photo
+        ? `<img class="photo-thumb" src="${p.photo}" alt="${p.name}" onclick="changePhoto(${p.id})">`
+        : `<div class="photo-ph" onclick="changePhoto(${p.id})">+</div>`}</td>
+      <td><div class="pname">${p.name}</div></td>
+      <td class="r">${fmt(p.purchase)}</td>
+      <td class="r" style="text-decoration:${num(p.mrp) ? 'line-through' : 'none'};color:var(--muted)">${num(p.mrp) ? fmt(p.mrp) : '—'}</td>
+      <td class="r">${fmt(p.sell)}</td>
+      <td class="r">${fmt(p.petrol)}</td>
+      <td class="r ${cls}">${pr >= 0 ? '+' : ''}${fmt(pr)}</td>
+      <td>${statusBadge('purchase', p.purchaseStatus || 'pending')}</td>
+      <td>${statusBadge('delivery', p.deliveryStatus || 'pending')}</td>
+      <td>${statusBadge('payment', p.paymentStatus || 'unpaid')}</td>
+      <td><span class="added-by">${by ? by.name : '?'}</span></td>
+      <td>
+        <div class="row-acts">
+          <button class="ia dup" title="Duplicate" onclick="duplicateProduct(${p.id})">⧉</button>
+          <button class="ia"     title="Edit"      onclick="openProdModal(${p.id})">✏</button>
+          <button class="ia del" title="Delete"    onclick="deleteProduct(${p.id})">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+  });
+
+  html += `</tbody><tfoot><tr class="totals-row">
+    <td colspan="3" style="padding:7px 10px;font-size:11px">Totals (${prods.length} items)</td>
+    <td class="r" style="padding:7px 10px">${fmt(tP)}</td>
+    <td class="r" style="padding:7px 10px">${fmt(tM)}</td>
+    <td class="r" style="padding:7px 10px">${fmt(tS)}</td>
+    <td class="r" style="padding:7px 10px">${fmt(tPt)}</td>
+    <td class="r ${tPr >= 0 ? 'profit' : 'loss'}" style="padding:7px 10px">${tPr >= 0 ? '+' : ''}${fmt(tPr)}</td>
+    <td colspan="5"></td>
+  </tr></tfoot></table></div></div>`;
+
+  return html;
+}
+
+function buildMonthList() {
+  const prods = DB.products || [];
+  const groups = {};
+  prods.forEach(p => {
+    const k = prodMonthKey(p);
+    (groups[k] = groups[k] || []).push(p);
+  });
+  // Merge in manually-added empty months so they show up too
+  (DB.customMonths || []).forEach(k => { if (!groups[k]) groups[k] = []; });
+
+  const keys   = Object.keys(groups).sort().reverse(); // newest month first
+  const curKey = monthKey(Date.now());
+  const allTotals = monthTotals(prods);
+
+  let html = `<div class="cat-section"><div class="cat-section-header">
+      <div class="cat-tag">📅 Monthly Reports</div>
+      <span class="count-badge">${keys.length} month${keys.length !== 1 ? 's' : ''}</span>
+      <span class="cat-total" style="margin-left:auto"></span>
+      <button class="btn btn-primary" style="margin-left:8px" onclick="addNewMonth()">＋ Add Month</button>
+    </div>`;
+
+  // ── All-months-combined total row (columns) ──
+  html += `<div class="summary" style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px">
+      <div class="sum-card"><label>All Months</label><div class="val">${keys.length}</div></div>
+      <div class="sum-card"><label>Total Purchase</label><div class="val">${fmt(allTotals.tP)}</div></div>
+      <div class="sum-card"><label>Total MRP</label><div class="val">${fmt(allTotals.tM)}</div></div>
+      <div class="sum-card"><label>Total Selling</label><div class="val">${fmt(allTotals.tS)}</div></div>
+      <div class="sum-card"><label>Total Petrol</label><div class="val">${fmt(allTotals.tPt)}</div></div>
+      <div class="sum-card ${allTotals.tPr >= 0 ? 'sum-green' : 'sum-red'}"><label>Total Profit / Loss</label><div class="val">${allTotals.tPr >= 0 ? '+' : ''}${fmt(allTotals.tPr)}</div></div>
+    </div>`;
+
+  if (!keys.length) {
+    html += `<div class="empty"><div class="ico">📅</div><p>No months yet<br><small>Click <b>＋ Add Month</b> or add a product to get started</small></p></div></div>`;
+    return html;
+  }
+
+  html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">`;
+
+  keys.forEach(k => {
+    const g  = groups[k];
+    const t  = monthTotals(g);
+    const isCur = k === curKey;
+    html += `<div class="tbl-wrap" style="padding:14px;cursor:pointer;${isCur ? 'border-color:var(--accent)' : ''}" onclick="openMonth('${k}')">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-weight:700;font-size:13px">${monthLabel(k)}${isCur ? ' <span style="font-size:10px;color:var(--accent);font-weight:600">(this month)</span>' : ''}</div>
+        <span class="count-badge">${g.length} item${g.length !== 1 ? 's' : ''}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;font-size:12px">
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Total Purchase</span><strong>${fmt(t.tP)}</strong></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Total Selling</span><strong>${fmt(t.tS)}</strong></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Total Petrol</span><strong>${fmt(t.tPt)}</strong></div>
+        <div style="display:flex;justify-content:space-between;padding-top:4px;border-top:1px solid var(--border);margin-top:2px">
+          <span style="color:var(--muted)">Profit / Loss</span>
+          <strong class="${t.tPr >= 0 ? 'profit' : 'loss'}">${t.tPr >= 0 ? '+' : ''}${fmt(t.tPr)}</strong>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  html += '</div></div>';
+  return html;
+}
+
+function addNewMonth() {
+  const raw = prompt('Add a month (format: YYYY-MM), e.g. ' + monthKey(Date.now()) + ' for this month, or ' + monthKey(new Date(new Date().setMonth(new Date().getMonth()+1)).getTime()) + ' for next month:', '');
+  if (!raw) return;
+  const key = raw.trim();
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(key)) { alert('Please enter a valid month like 2026-08'); return; }
+  DB = loadDB();
+  DB.customMonths = DB.customMonths || [];
+  if (!DB.customMonths.includes(key)) DB.customMonths.push(key);
+  saveDB(DB);
+  DB = loadDB();
+  logActivity('📅 ' + currentUser.name + ' added month ' + monthLabel(key));
+  openMonth(key);
+}
+
+function buildMonthDetail(key) {
+  const prods = (DB.products || []).filter(p => prodMonthKey(p) === key);
+  const t = monthTotals(prods);
+  let html = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+    <button class="btn btn-outline" onclick="openMonthly()">← All Months</button>
+    <button class="btn btn-primary" onclick="openProdModal(null)">＋ Add product to this month</button>
+  </div>`;
+
+  // ── This month's totals shown as columns at the top ──
+  html += `<div class="summary" style="border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px">
+      <div class="sum-card"><label>Items</label><div class="val">${prods.length}</div></div>
+      <div class="sum-card"><label>Total Purchase</label><div class="val">${fmt(t.tP)}</div></div>
+      <div class="sum-card"><label>Total MRP</label><div class="val">${fmt(t.tM)}</div></div>
+      <div class="sum-card"><label>Total Selling</label><div class="val">${fmt(t.tS)}</div></div>
+      <div class="sum-card"><label>Total Petrol</label><div class="val">${fmt(t.tPt)}</div></div>
+      <div class="sum-card ${t.tPr >= 0 ? 'sum-green' : 'sum-red'}"><label>Profit / Loss</label><div class="val">${t.tPr >= 0 ? '+' : ''}${fmt(t.tPr)}</div></div>
+    </div>`;
+
+  if (!prods.length) {
+    html += `<div class="empty"><div class="ico">📅</div><p>No products yet for ${monthLabel(key)}<br><small>Click <b>＋ Add product to this month</b> above</small></p></div>`;
+    return html;
+  }
+  html += buildSection({ id: 'month', name: monthLabel(key), icon: '📅', color: '#0369a1' }, prods, true);
+  return html;
+}
+
+// ── Category select ───────────────────────
+function setActiveCat(raw) {
+  activeCat   = raw === 'all' ? 'all' : parseInt(raw);
+  activeMonth = null;
+  closeSidebar();
+  renderAll();
+}
+
+// ── Monthly reports ────────────────────────
+function openMonthly() {
+  activeCat   = 'monthly';
+  activeMonth = null;
+  closeSidebar();
+  renderAll();
+}
+function openMonth(key) {
+  activeCat   = 'monthly';
+  activeMonth = key;
+  closeSidebar();
+  renderAll();
+}
+
+// ══ PRODUCT CRUD ══════════════════════════
+function openProdModal(id) {
+  DB = loadDB();
+  editProdId   = id !== null ? parseInt(id) : null;
+  currentPhoto = null;
+
+  // Populate category dropdown
+  const sel = document.getElementById('f-cat');
+  sel.innerHTML = '<option value="">— No category —</option>';
+  (DB.categories || []).forEach(c => {
+    sel.innerHTML += `<option value="${c.id}">${c.icon} ${c.name}</option>`;
+  });
+
+  if (editProdId !== null) {
+    const p = (DB.products || []).find(x => x.id === editProdId);
+    if (!p) return;
+    document.getElementById('prod-modal-title').textContent = 'Edit Product';
+    document.getElementById('f-name').value     = p.name;
+    document.getElementById('f-purchase').value = p.purchase || '';
+    document.getElementById('f-mrp').value      = p.mrp      || '';
+    document.getElementById('f-sell').value     = p.sell     || '';
+    document.getElementById('f-petrol').value   = p.petrol   || '';
+    sel.value = (p.catId !== null && p.catId !== undefined) ? String(p.catId) : '';
+    document.getElementById('f-month').value    = p.month || monthKey(p.createdAt);
+    document.getElementById('f-pstatus').value   = p.purchaseStatus || 'pending';
+    document.getElementById('f-dstatus').value   = p.deliveryStatus || 'pending';
+    document.getElementById('f-paystatus').value = p.paymentStatus  || 'unpaid';
+    showPhotoPreview(p.photo || null);
+    currentPhoto = p.photo || null;
+  } else {
+    document.getElementById('prod-modal-title').textContent = 'Add Product';
+    document.getElementById('f-name').value     = '';
+    document.getElementById('f-purchase').value = '';
+    document.getElementById('f-mrp').value      = '';
+    document.getElementById('f-sell').value     = '';
+    document.getElementById('f-petrol').value   = '';
+    sel.value = activeCat !== 'all' && activeCat !== 'monthly' ? String(activeCat) : '';
+    document.getElementById('f-month').value    = (activeCat === 'monthly' && activeMonth) ? activeMonth : monthKey(Date.now());
+    document.getElementById('f-pstatus').value   = 'pending';
+    document.getElementById('f-dstatus').value   = 'pending';
+    document.getElementById('f-paystatus').value = 'unpaid';
+    showPhotoPreview(null);
+  }
+  updateProfitPreview();
+  document.getElementById('prod-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('f-name').focus(), 100);
+}
+function closeProdModal() { document.getElementById('prod-overlay').classList.remove('open'); }
+
+function showPhotoPreview(src) {
+  document.getElementById('photo-preview').innerHTML = src
+    ? `<img src="${src}" style="width:100%;height:100%;object-fit:cover">`
+    : '<div class="ph-ico">📷</div><div class="ph-txt">Add photo</div>';
+}
+function handlePhotoUpload(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => { currentPhoto = ev.target.result; showPhotoPreview(currentPhoto); };
+  r.readAsDataURL(f); e.target.value = '';
+}
+function changePhoto(id) {
+  const fi = document.getElementById('photo-file');
+  fi.onchange = function(e) {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => {
+      DB = loadDB();
+      const p = (DB.products || []).find(x => x.id === parseInt(id));
+      if (p) { p.photo = ev.target.result; saveDB(DB); logActivity('📷 ' + currentUser.name + ' updated photo for "' + p.name + '"'); renderAll(); }
+    };
+    r.readAsDataURL(f); e.target.value = '';
+  };
+  fi.click();
+}
+function updateProfitPreview() {
+  const pu = num(document.getElementById('f-purchase').value);
+  const se = num(document.getElementById('f-sell').value);
+  const pt = num(document.getElementById('f-petrol').value);
+  const b  = document.getElementById('profit-preview-box');
+  if (!pu && !se && !pt) { b.innerHTML = ''; return; }
+  const pr = se - pu - pt;
+  b.innerHTML = `<div class="profit-prev ${pr >= 0 ? 'pp-g' : 'pp-r'}">${pr >= 0 ? 'Profit' : 'Loss'}: ${pr >= 0 ? '+' : ''}${fmt(Math.abs(pr))}</div>`;
+}
+
+function saveProduct() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { document.getElementById('f-name').focus(); alert('Product name is required'); return; }
+
+  const purchase = num(document.getElementById('f-purchase').value);
+  const mrp      = num(document.getElementById('f-mrp').value);
+  const sell     = num(document.getElementById('f-sell').value);
+  const petrol   = num(document.getElementById('f-petrol').value);
+  const catRaw   = document.getElementById('f-cat').value;
+  // catId MUST be integer or null — never a string
+  const catId    = catRaw !== '' ? parseInt(catRaw) : null;
+  const month    = document.getElementById('f-month').value || monthKey(Date.now());
+  const purchaseStatus = document.getElementById('f-pstatus').value;
+  const deliveryStatus = document.getElementById('f-dstatus').value;
+  const paymentStatus  = document.getElementById('f-paystatus').value;
+
+  DB = loadDB();
+
+  if (editProdId !== null) {
+    const p = (DB.products || []).find(x => x.id === editProdId);
+    if (p) {
+      p.name      = name;
+      p.purchase  = purchase;
+      p.mrp       = mrp;
+      p.sell      = sell;
+      p.petrol    = petrol;
+      p.catId     = catId;
+      p.month     = month;
+      p.purchaseStatus = purchaseStatus;
+      p.deliveryStatus = deliveryStatus;
+      p.paymentStatus  = paymentStatus;
+      p.photo     = currentPhoto !== null ? currentPhoto : p.photo;
+      p.updatedAt = Date.now();
+      p.updatedBy = currentUser.id;
+    }
+    saveDB(DB);
+    logActivity('✏️ ' + currentUser.name + ' edited "' + name + '"');
+  } else {
+    const newProd = {
+      id:        DB.nextProdId++,
+      name,
+      purchase,
+      mrp,
+      sell,
+      petrol,
+      catId,          // integer or null
+      month,          // 'YYYY-MM' — which month this order belongs to
+      purchaseStatus,
+      deliveryStatus,
+      paymentStatus,
+      photo:     currentPhoto || null,
+      createdAt: Date.now(),
+      createdBy: currentUser.id,
+    };
+    DB.products.push(newProd);
+    saveDB(DB);
+    logActivity('➕ ' + currentUser.name + ' added "' + name + '"');
+  }
+
+  // Re-load to confirm save worked, then render
+  DB = loadDB();
+  closeProdModal();
+  renderAll();
+}
+
+function deleteProduct(id) {
+  if (!confirm('Remove this product?')) return;
+  DB = loadDB();
+  const pid = parseInt(id);
+  const p   = (DB.products || []).find(x => x.id === pid);
+  const nm  = p ? p.name : 'product';
+  DB.products = (DB.products || []).filter(x => x.id !== pid);
+  saveDB(DB);
+  DB = loadDB();
+  logActivity('🗑️ ' + currentUser.name + ' deleted "' + nm + '"');
+  renderAll();
+}
+
+function duplicateProduct(id) {
+  DB = loadDB();
+  const pid  = parseInt(id);
+  const p    = (DB.products || []).find(x => x.id === pid);
+  if (!p) return;
+  const copy = Object.assign({}, p, {
+    id:        DB.nextProdId++,
+    name:      p.name + ' (copy)',
+    createdAt: Date.now(),
+    createdBy: currentUser.id,
+  });
+  DB.products.push(copy);
+  saveDB(DB);
+  DB = loadDB();
+  logActivity('⧉ ' + currentUser.name + ' duplicated "' + p.name + '"');
+  renderAll();
+}
+
+// ══ CATEGORY CRUD ══════════════════════════
+function openCatModal(id) {
+  editCatId = id !== null ? parseInt(id) : null;
+  selColor = '#2563eb'; selEmoji = '📦';
+  document.getElementById('c-name').value = '';
+  document.getElementById('cat-modal-title').textContent = editCatId ? 'Edit Category' : 'Add Category';
+  if (editCatId) {
+    const c = (DB.categories || []).find(x => x.id === editCatId);
+    if (c) { document.getElementById('c-name').value = c.name; selColor = c.color; selEmoji = c.icon; }
+  }
+  renderColorPicks(); renderEmojiPicks();
+  document.getElementById('cat-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('c-name').focus(), 100);
+}
+function closeCatModal() { document.getElementById('cat-overlay').classList.remove('open'); }
+function renderColorPicks() {
+  document.getElementById('color-picks').innerHTML = COLORS.map(c =>
+    `<div class="cp ${selColor === c ? 'sel' : ''}" style="background:${c}" onclick="selColor='${c}';renderColorPicks()"></div>`
+  ).join('');
+}
+function renderEmojiPicks() {
+  document.getElementById('emoji-picks').innerHTML = EMOJIS.map(e =>
+    `<div class="ep ${selEmoji === e ? 'sel' : ''}" onclick="selEmoji='${e}';renderEmojiPicks()">${e}</div>`
+  ).join('');
+}
+function saveCategory() {
+  const name = document.getElementById('c-name').value.trim();
+  if (!name) { document.getElementById('c-name').focus(); alert('Category name required'); return; }
+  DB = loadDB();
+  if (editCatId) {
+    const c = (DB.categories || []).find(x => x.id === editCatId);
+    if (c) { c.name = name; c.color = selColor; c.icon = selEmoji; }
+  } else {
+    const newCat = {id: DB.nextCatId++, name, color: selColor, icon: selEmoji, createdBy: currentUser.id};
+    DB.categories.push(newCat);
+    logActivity('📁 ' + currentUser.name + ' added category "' + name + '"');
+  }
+  saveDB(DB);
+  DB = loadDB();
+  closeCatModal();
+  renderAll();
+}
+function deleteCategory(id) {
+  if (!confirm('Delete this category? Products will become uncategorized.')) return;
+  const cid = parseInt(id);
+  DB = loadDB();
+  DB.categories = (DB.categories || []).filter(c => parseInt(c.id) !== cid);
+  (DB.products || []).forEach(p => { if (catMatch(p.catId, cid)) p.catId = null; });
+  if (activeCat === cid) activeCat = 'all';
+  saveDB(DB);
+  DB = loadDB();
+  renderAll();
+}
+
+// ══ USERS ══════════════════════════════════
+function openUsersPanel() {
+  DB = loadDB();
+  document.getElementById('users-list').innerHTML = (DB.users || []).map(u => {
+    const cnt    = (DB.products || []).filter(p => p.createdBy === u.id).length;
+    const online = DB.onlineUsers[u.id];
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="width:36px;height:36px;border-radius:50%;background:${u.role==='admin'?'#eff4ff':'#f0fdf4'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:${u.role==='admin'?'var(--accent)':'var(--green)'};">${u.name[0]}</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px">${u.name} ${u.id===currentUser.id?'<span style="font-size:10px;color:var(--accent)">(you)</span>':''}</div>
+        <div style="font-size:11px;color:var(--muted)">${u.username} · ${u.role} · ${cnt} product${cnt!==1?'s':''}</div>
+      </div>
+      <div style="font-size:11px;color:${online?'var(--green)':'var(--muted)'}">${online?'🟢 Online':'⚫ Offline'}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('users-overlay').classList.add('open');
+}
+function closeUsersPanel() { document.getElementById('users-overlay').classList.remove('open'); }
+
+// ══ EXPORT ══════════════════════════════════
+function exportCSV() {
+  DB = loadDB();
+  let rows = [['#','Product','Month','Category','Purchase','MRP','Selling','Petrol','Profit/Loss','Purchase Status','Delivery Status','Payment Status','Added By']];
+  let i = 1;
+  (DB.products || []).forEach(p => {
+    const cat = (DB.categories || []).find(c => catMatch(p.catId, c.id));
+    const by  = (DB.users || []).find(u => u.id === p.createdBy);
+    const pr  = num(p.sell) - num(p.purchase) - num(p.petrol);
+    rows.push([i++, p.name, monthLabel(prodMonthKey(p)), cat ? cat.name : 'Uncategorized',
+      num(p.purchase).toFixed(2), num(p.mrp).toFixed(2), num(p.sell).toFixed(2), num(p.petrol).toFixed(2),
+      (pr >= 0 ? '+' : '') + pr.toFixed(2),
+      p.purchaseStatus || 'pending', p.deliveryStatus || 'pending', p.paymentStatus || 'unpaid',
+      by ? by.name : '?']);
+  });
+  const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'billbook_export.csv'; a.click();
+}
+
+// ══ SIDEBAR TOGGLE ══════════════════════════
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay-bg').classList.toggle('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay-bg').classList.remove('open');
+}
+
+// Close modals on backdrop click
+['prod-overlay','cat-overlay','users-overlay'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+});
+
+// Initial render of color/emoji pickers
+renderColorPicks();
+renderEmojiPicks();
+</script>
+</body>
+</html>
